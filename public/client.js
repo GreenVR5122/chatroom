@@ -1,68 +1,58 @@
 const socket = io();
 
-const messages = document.getElementById("messages");
-const users = document.getElementById("users");
+const usersEl = document.getElementById('users');
+const messagesEl = document.getElementById('messages');
+const msgBox = document.getElementById('msgBox');
+const sendBtn = document.getElementById('sendBtn');
+const notifyEl = document.getElementById('notify');
 
-// Request notifications
-if (Notification.permission !== "granted") {
-  Notification.requestPermission();
+// --- Dark/Light Mode Toggle ---
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark');
+  document.body.classList.toggle('light');
+});
+
+// --- Notifications ---
+function notify(text) {
+  notifyEl.innerText = text;
+  notifyEl.style.display = "block";
+  setTimeout(() => { notifyEl.style.display = "none"; }, 3000);
 }
 
-// Add message
-function addMessage(msg) {
-  const div = document.createElement("div");
-  div.textContent = `[${new Date(msg.time).toLocaleTimeString()}] ${msg.name}: ${msg.text}`;
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-}
-
-// send chat message
-function sendMessage() {
-  const msg = document.getElementById("msg").value;
-  socket.emit("chat-message", { text: msg });
-  document.getElementById("msg").value = "";
-}
-
-// set name
-function setName() {
-  const newName = document.getElementById("newName").value;
-  socket.emit("set-name", newName);
-}
-
-// request mod
-function requestMod() {
-  const name = document.getElementById("modName").value;
-  socket.emit("mod-signup", name);
-}
-
-// socket listeners
-socket.on("chat-message", (msg) => {
-  addMessage(msg);
-  if (Notification.permission === "granted") {
-    new Notification(`${msg.name}`, { body: msg.text || "[Image]" });
+// --- Sending messages ---
+sendBtn.addEventListener('click', () => {
+  if (msgBox.value.trim() !== "") {
+    socket.emit('chat-message', { text: msgBox.value });
+    msgBox.value = "";
   }
 });
 
-socket.on("system", (msg) => addMessage({ ...msg, name: "SYSTEM" }));
-socket.on("userlist", (list) => {
-  users.innerHTML = "";
+// --- Receiving messages ---
+socket.on('chat-message', (msg) => {
+  const el = document.createElement('div');
+  el.textContent = `${msg.name}: ${msg.text}`;
+  messagesEl.appendChild(el);
+  notify(`New message from ${msg.name}`);
+});
+
+socket.on('system', (msg) => {
+  const el = document.createElement('div');
+  el.style.fontStyle = "italic";
+  el.textContent = `[SYSTEM] ${msg.text}`;
+  messagesEl.appendChild(el);
+});
+
+socket.on('userlist', (list) => {
+  usersEl.innerHTML = "";
   list.forEach(u => {
-    const li = document.createElement("li");
+    const li = document.createElement('li');
     li.textContent = u;
-    users.appendChild(li);
+    usersEl.appendChild(li);
   });
 });
 
-// --- Update Log ---
-const updates = [
-  "✅ Added slur censor",
-  "✅ Added browser notifications",
-  "✅ Added moderator sign-ups",
-  "✅ Added update log"
-];
-const log = document.getElementById("updates");
-updates.forEach(update => {
-  const li = document.createElement("li");
-  li.textContent = update;
-  log.appendChild(li);
+// --- Mod Signup ---
+document.getElementById('modSignup').addEventListener('click', () => {
+  notify("You signed up as a moderator (placeholder).");
 });
