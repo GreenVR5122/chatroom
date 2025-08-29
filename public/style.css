@@ -1,86 +1,50 @@
 body {
-  font-family: Arial, sans-serif;
-  background: linear-gradient(135deg, #1e1e2f, #2d2d44);
-  color: #eee;
   margin: 0;
-  padding: 0;
+  font-family: Arial, sans-serif;
+  background: #181818;
+  color: #f1f1f1;
+  display: flex;
+  height: 100vh;
 }
 
-#chat {
-  max-width: 800px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #2c2c3e;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+#chat-container {
+  display: flex;
+  width: 100%;
 }
 
-h2, h3 {
-  text-align: center;
-}
-
-#messages-container {
-  height: 300px;
-  overflow-y: auto;
-  background: #1a1a28;
-  border-radius: 8px;
+#sidebar {
+  width: 200px;
+  background: #202020;
   padding: 10px;
-  margin-bottom: 10px;
+  border-right: 2px solid #333;
 }
 
-#messages li {
-  list-style: none;
-  padding: 5px;
-  border-bottom: 1px solid #444;
+#main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
-#messages li.system {
-  color: #ffcc00;
+#messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  border-bottom: 2px solid #333;
+}
+
+.msg {
+  margin: 5px 0;
+}
+
+.system {
+  color: #aaa;
   font-style: italic;
 }
 
-#input-container,
-#name-container {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-input {
-  flex: 1;
-  padding: 8px;
-  border-radius: 6px;
-  border: none;
-}
-
-button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  background: #4cafef;
-  color: white;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-button:hover {
-  background: #3998db;
-}
-
-#users {
-  background: #1a1a28;
-  border-radius: 8px;
-  padding: 10px;
-}
-
-#users li {
-  list-style: none;
-  padding: 3px 0;
-}
-
-#modPanel {
-  margin-top: 15px;
-  padding: 10px;
-  background: #24243a;
-  border-radius: 8px;
+.pfp {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-right: 5px;
 }
