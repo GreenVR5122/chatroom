@@ -1,114 +1,48 @@
-const myUsername = localStorage.getItem("lastName")||"Guest";
-const socket = io({ query: { username: myUsername } });
+const socket = io({ query:{ username: localStorage.getItem("lastName")||"Guest" } });
 
-const usersEl=document.getElementById('users');
-const messagesEl=document.getElementById('messages');
-const chatInput=document.getElementById('chatInput');
-const sendBtn=document.getElementById('sendBtn');
-const notifyEl=document.getElementById('notify');
+const usersEl = document.getElementById('users');
+const messagesEl = document.getElementById('messages');
+const chatInput = document.getElementById('chatInput');
+const sendBtn = document.getElementById('sendBtn');
+const modPanelBtn = document.getElementById('modPanelBtn');
+let myRole = null;
 
-const nameInput=document.getElementById('nameInput');
-const pfpInput=document.getElementById('pfpInput');
-const saveSettings=document.getElementById('saveSettings');
-let myPfp=null;
-
-// Theme toggle
-document.getElementById('themeToggle').onclick=()=>{
-  document.body.classList.toggle('dark');
-  document.body.classList.toggle('light');
+// Send chat
+sendBtn.onclick = ()=>{ 
+  socket.emit('chat-message',{ text: chatInput.value }); 
+  chatInput.value=''; 
 };
 
-// Notifications
-function notify(text){
-  notifyEl.innerText=text;
-  notifyEl.style.display="block";
-  setTimeout(()=>{notifyEl.style.display="none";},3000);
-}
+// Show user list with grant MOD button
+socket.on('userlist', list=>{
+  usersEl.innerHTML='';
+  list.forEach(u=>{
+    const li=document.createElement('li');
+    li.textContent=`${u.name} [ID:${u.id}]${u.role?' ['+u.role+']':''}`;
 
-// Save/load name history
-function saveName(name){
-  let history=JSON.parse(localStorage.getItem("nameHistory"))||[];
-  if(!history.includes(name)) history.push(name);
-  localStorage.setItem("nameHistory", JSON.stringify(history));
-  localStorage.setItem("lastName", name);
-}
-function loadLastName(){ return localStorage.getItem("lastName"); }
+    // Grant MOD button for OWNER/ADMIN
+    if(myRole==='OWNER' || myRole==='ADMIN'){
+      const grantBtn=document.createElement('button');
+      grantBtn.textContent='Grant MOD';
+      grantBtn.onclick=()=>socket.emit('grant-mod', u.id);
+      li.appendChild(grantBtn);
+    }
 
-// Save settings
-saveSettings.onclick=()=>{
-  const newName=nameInput.value.trim();
-  if(newName){
-    socket.emit('set-name', newName);
-    saveName(newName);
-    notify(`Name changed to ${newName}`);
-  }
-  const file=pfpInput.files[0];
-  if(file){
-    const reader=new FileReader();
-    reader.onload=()=>{ myPfp=reader.result; socket.emit('set-pfp', myPfp); };
-    reader.readAsDataURL(file);
-  }
-};
-
-// Auto-load last name
-const lastName=loadLastName();
-if(lastName){ socket.emit('set-name', lastName); nameInput.value=lastName; }
-
-// Send message
-function sendMessage(text=null,img=null){ socket.emit('chat-message',{ text:text||chatInput.value, img:img }); chatInput.value=''; }
-sendBtn.onclick=()=>sendMessage();
-chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMessage(); });
-
-// Image message
-document.getElementById('imageInput').onchange=e=>{
-  const file=e.target.files[0];
-  if(file){
-    const reader=new FileReader();
-    reader.onload=()=>sendMessage('',reader.result);
-    reader.readAsDataURL(file);
-  }
-};
-
-// Receive messages
-socket.on('chat-message',msg=>{
-  const li=document.createElement('li');
-  li.dataset.id=msg.id;
-
-  // PFP
-  if(msg.pfp){ const img=document.createElement('img'); img.src=msg.pfp; img.classList.add('pfp'); li.appendChild(img); }
-
-  // Role tag
-  let roleTag=msg.role?`[${msg.role}] `:'';
-  let displayName=msg.name;
-  if(msg.role==='OWNER'&&msg.name==='GreenVR512') displayName='G^R^E^E^N^V^R';
-
-  li.innerHTML+=`<strong>${roleTag}${displayName}:</strong> ${msg.text}`;
-
-  // Image
-  if(msg.img){ const img=document.createElement('img'); img.src=msg.img; img.classList.add('chat-image'); li.appendChild(img); }
-
-  // Add delete button if MOD/ADMIN/OWNER
-  if(['OWNER','MOD','ADMIN'].includes(msg.role)){
-    const delBtn=document.createElement('button');
-    delBtn.innerText='🗑';
-    delBtn.onclick=()=>{ socket.emit('delete-message',msg.id); };
-    li.appendChild(delBtn);
-  }
-
-  messagesEl.appendChild(li);
-  messagesEl.scrollTop=messagesEl.scrollHeight;
-
-  notify(`New message from ${displayName}`);
+    usersEl.appendChild(li);
+  });
 });
 
-// Delete message
-socket.on('delete-message',msgId=>{
-  const msgEl=document.querySelector(`li[data-id='${msgId}']`);
-  if(msgEl) msgEl.remove();
+// Receive chat
+socket.on('chat-message', msg=>{
+  const li=document.createElement('li');
+  li.dataset.id = msg.id;
+  li.innerHTML = `<strong>${msg.role?`[${msg.role}] `:''}${msg.name}:</strong> ${msg.text}`;
+  messagesEl.appendChild(li);
+  messagesEl.scrollTop=messagesEl.scrollHeight;
 });
 
 // System messages
-socket.on('system',msg=>{
+socket.on('system', msg=>{
   const li=document.createElement('li');
   li.style.fontStyle='italic';
   li.textContent=`[SYSTEM] ${msg.text}`;
@@ -116,8 +50,27 @@ socket.on('system',msg=>{
   messagesEl.scrollTop=messagesEl.scrollHeight;
 });
 
-// User list
-socket.on('userlist',list=>{
-  usersEl.innerHTML='';
-  list.forEach(u=>{ const li=document.createElement('li'); li.textContent=u; usersEl.appendChild(li); });
+// Delete messages
+socket.on('delete-message', msgId=>{
+  const el=document.querySelector(`li[data-id='${msgId}']`);
+  if(el) el.remove();
 });
+
+// Show moderation panel button if MOD/ADMIN/OWNER
+socket.on('userlist', list=>{
+  const me = list.find(u=>u.name===localStorage.getItem("lastName")||"Guest");
+  if(me) myRole = me.role;
+  modPanelBtn.style.display = (['OWNER','MOD','ADMIN'].includes(myRole))?'inline-block':'none';
+});
+
+// Moderation panel actions
+modPanelBtn.onclick = ()=>{
+  const panel = document.getElementById('modPanel');
+  panel.style.display='block';
+};
+
+// Ban user (from panel)
+document.getElementById('banBtn').onclick = ()=>{
+  const targetId = parseInt(document.getElementById('banInput').value);
+  if(targetId) socket.emit('ban-user', targetId);
+};
