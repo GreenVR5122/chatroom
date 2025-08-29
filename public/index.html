@@ -1,42 +1,41 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>Chatroom</title>
+  <meta charset="utf-8">
+  <title>ChatRoom</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="light">
-  <div id="topbar">
-    <h1>Chatroom</h1>
-    <button id="themeToggle">🌙 Dark/Light</button>
-  </div>
+  <div id="container">
+    <h1>ChatRoom</h1>
+    <button id="themeToggle">🌙 Toggle Theme</button>
+    <button id="modSignup">⭐ Mod Signup</button>
+    <div id="updateLog">Update Log:<br>- Added Name Change + Save<br>- Dark/Light Mode<br>- Notifications</div>
 
-  <div id="main">
-    <div id="sidebar">
-      <h3>Users</h3>
-      <ul id="users"></ul>
-
-      <h3>Moderation</h3>
-      <button id="modSignup">Sign up as Mod</button>
-
-      <h3>Update Log</h3>
-      <ul id="updates">
-        <li>✅ Added cuss/slur filter</li>
-        <li>✅ Added notifications</li>
-        <li>✅ Added dark/light mode</li>
-        <li>✅ Added mod signups</li>
-      </ul>
+    <!-- Name box -->
+    <div id="nameBox">
+      <input type="text" id="nameInput" placeholder="Enter your name">
+      <button id="setNameBtn">Set Name</button>
     </div>
 
-    <div id="chat">
-      <div id="messages"></div>
-      <input id="msgBox" placeholder="Type message...">
+    <!-- Chat messages -->
+    <div id="messages"></div>
+
+    <!-- Input box -->
+    <div id="inputBox">
+      <input type="text" id="msgBox" placeholder="Type a message">
       <button id="sendBtn">Send</button>
     </div>
+
+    <!-- Users list -->
+    <div id="usersBox">
+      <h3>Online Users</h3>
+      <ul id="users"></ul>
+    </div>
+
+    <!-- Notification -->
+    <div id="notify"></div>
   </div>
-
-  <div id="notify"></div>
-
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>
