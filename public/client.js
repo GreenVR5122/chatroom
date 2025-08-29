@@ -1,76 +1,91 @@
-const socket = io({ query:{ username: localStorage.getItem("lastName")||"Guest" } });
+const socket = io();
 
-const usersEl = document.getElementById('users');
-const messagesEl = document.getElementById('messages');
-const chatInput = document.getElementById('chatInput');
-const sendBtn = document.getElementById('sendBtn');
-const modPanelBtn = document.getElementById('modPanelBtn');
-let myRole = null;
+// DOM elements
+const messages = document.getElementById("messages");
+const usersList = document.getElementById("users");
+const input = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
+const nameInput = document.getElementById("nameInput");
+const setNameBtn = document.getElementById("setNameBtn");
+const modPanelBtn = document.getElementById("modPanelBtn");
+const modPanel = document.getElementById("modPanel");
+const grantInput = document.getElementById("grantInput");
+const grantBtn = document.getElementById("grantBtn");
+const banInput = document.getElementById("banInput");
+const banBtn = document.getElementById("banBtn");
 
-// Send chat
-sendBtn.onclick = ()=>{ 
-  socket.emit('chat-message',{ text: chatInput.value }); 
-  chatInput.value=''; 
+// Send message
+sendBtn.onclick = () => {
+  if (input.value.trim()) {
+    socket.emit("chat-message", { text: input.value });
+    input.value = "";
+  }
 };
 
-// Show user list with grant MOD button
-socket.on('userlist', list=>{
-  usersEl.innerHTML='';
-  list.forEach(u=>{
-    const li=document.createElement('li');
-    li.textContent=`${u.name} [ID:${u.id}]${u.role?' ['+u.role+']':''}`;
+// Change name
+setNameBtn.onclick = () => {
+  if (nameInput.value.trim()) {
+    socket.emit("set-name", nameInput.value);
+    nameInput.value = "";
+  }
+};
 
-    // Grant MOD button for OWNER/ADMIN
-    if(myRole==='OWNER' || myRole==='ADMIN'){
-      const grantBtn=document.createElement('button');
-      grantBtn.textContent='Grant MOD';
-      grantBtn.onclick=()=>socket.emit('grant-mod', u.id);
-      li.appendChild(grantBtn);
-    }
+// Grant mod
+grantBtn.onclick = () => {
+  if (grantInput.value.trim()) {
+    socket.emit("grant-mod", grantInput.value);
+    grantInput.value = "";
+  }
+};
 
-    usersEl.appendChild(li);
-  });
-});
+// Ban user
+banBtn.onclick = () => {
+  if (banInput.value.trim()) {
+    socket.emit("ban-user", banInput.value);
+    banInput.value = "";
+  }
+};
 
-// Receive chat
-socket.on('chat-message', msg=>{
-  const li=document.createElement('li');
-  li.dataset.id = msg.id;
-  li.innerHTML = `<strong>${msg.role?`[${msg.role}] `:''}${msg.name}:</strong> ${msg.text}`;
-  messagesEl.appendChild(li);
-  messagesEl.scrollTop=messagesEl.scrollHeight;
+// Receive messages
+socket.on("chat-message", (msg) => {
+  const li = document.createElement("li");
+  li.innerHTML = `<strong>[${msg.name}]</strong>: ${msg.text}`;
+  messages.appendChild(li);
+  messages.scrollTop = messages.scrollHeight;
 });
 
 // System messages
-socket.on('system', msg=>{
-  const li=document.createElement('li');
-  li.style.fontStyle='italic';
-  li.textContent=`[SYSTEM] ${msg.text}`;
-  messagesEl.appendChild(li);
-  messagesEl.scrollTop=messagesEl.scrollHeight;
+socket.on("system", (msg) => {
+  const li = document.createElement("li");
+  li.className = "system";
+  li.textContent = msg.text;
+  messages.appendChild(li);
+  messages.scrollTop = messages.scrollHeight;
 });
 
-// Delete messages
-socket.on('delete-message', msgId=>{
-  const el=document.querySelector(`li[data-id='${msgId}']`);
-  if(el) el.remove();
+// User list
+socket.on("userlist", (list) => {
+  usersList.innerHTML = "";
+  list.forEach((u) => {
+    const li = document.createElement("li");
+    li.textContent = `${u.name} (${u.id})${u.role === "MOD" ? " [MOD]" : ""}`;
+    usersList.appendChild(li);
+  });
 });
 
-// Show moderation panel button if MOD/ADMIN/OWNER
-socket.on('userlist', list=>{
-  const me = list.find(u=>u.name===localStorage.getItem("lastName")||"Guest");
-  if(me) myRole = me.role;
-  modPanelBtn.style.display = (['OWNER','MOD','ADMIN'].includes(myRole))?'inline-block':'none';
+// Become mod
+socket.on("mod-granted", () => {
+  modPanelBtn.style.display = "inline-block";
 });
 
-// Moderation panel actions
-modPanelBtn.onclick = ()=>{
-  const panel = document.getElementById('modPanel');
-  panel.style.display='block';
+// Toggle mod panel
+modPanelBtn.onclick = () => {
+  modPanel.style.display =
+    modPanel.style.display === "none" ? "block" : "none";
 };
 
-// Ban user (from panel)
-document.getElementById('banBtn').onclick = ()=>{
-  const targetId = parseInt(document.getElementById('banInput').value);
-  if(targetId) socket.emit('ban-user', targetId);
-};
+// Banned
+socket.on("banned", () => {
+  alert("You have been banned!");
+  document.body.innerHTML = "<h1>BANNED</h1>";
+});
