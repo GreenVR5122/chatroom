@@ -1,50 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Super ChatRoom</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <title>Chatroom</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="light">
-<div id="container">
-  <h1>Super ChatRoom</h1>
-  <div id="topButtons">
-    <button id="themeToggle">🌙 Toggle Theme</button>
-    <button id="modSignup">⭐ Mod Signup</button>
-  </div>
+<body>
+  <div id="chat">
+    <h2>Chatroom</h2>
 
-  <div id="updateLog">
-    <strong>Update Log:</strong><br>
-    - Owner/Mod/Admin Tags<br>
-    - Custom OWNER Name<br>
-    - PFP + Image messages<br>
-    - Dark/Light mode<br>
-    - Notifications
-  </div>
+    <div id="messages-container">
+      <ul id="messages"></ul>
+    </div>
 
-  <div id="settings">
-    <input id="nameInput" placeholder="Enter your name">
-    <input type="file" id="pfpInput" accept="image/*">
-    <button id="saveSettings">Save</button>
-  </div>
+    <div id="input-container">
+      <input id="chatInput" placeholder="Type message..." />
+      <button id="sendBtn">Send</button>
+    </div>
 
-  <ul id="messages"></ul>
+    <div id="name-container">
+      <input id="nameInput" placeholder="Change name..." />
+      <button id="setNameBtn">Set Name</button>
+    </div>
 
-  <div id="inputBox">
-    <input id="chatInput" placeholder="Type a message">
-    <input type="file" id="imageInput" accept="image/*">
-    <button id="sendBtn">Send</button>
-  </div>
-
-  <div id="usersBox">
-    <h3>Online Users</h3>
+    <h3>Users</h3>
     <ul id="users"></ul>
+
+    <!-- Moderation -->
+    <button id="modPanelBtn" style="display:none;">Open Mod Panel</button>
+    <div id="modPanel" style="display:none;">
+      <h3>Moderation Panel</h3>
+      <input id="grantInput" placeholder="User ID to grant mod" />
+      <button id="grantBtn">Grant Mod</button>
+      <input id="banInput" placeholder="User ID to ban" />
+      <button id="banBtn">Ban User</button>
+    </div>
   </div>
 
-  <div id="notify"></div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script src="client.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
 </body>
 </html>
