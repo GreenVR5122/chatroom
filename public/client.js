@@ -20,11 +20,22 @@ function notify(text) {
   setTimeout(() => { notifyEl.style.display = "none"; }, 3000);
 }
 
-// --- Sending messages ---
-sendBtn.addEventListener('click', () => {
+// --- Function to send message ---
+function sendMessage() {
   if (msgBox.value.trim() !== "") {
     socket.emit('chat-message', { text: msgBox.value });
     msgBox.value = "";
+  }
+}
+
+// --- Send button click ---
+sendBtn.addEventListener('click', sendMessage);
+
+// --- Press Enter key ---
+msgBox.addEventListener('keydown', (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault(); // prevents accidental newlines
+    sendMessage();
   }
 });
 
@@ -33,6 +44,7 @@ socket.on('chat-message', (msg) => {
   const el = document.createElement('div');
   el.textContent = `${msg.name}: ${msg.text}`;
   messagesEl.appendChild(el);
+  messagesEl.scrollTop = messagesEl.scrollHeight; // auto scroll
   notify(`New message from ${msg.name}`);
 });
 
@@ -41,6 +53,7 @@ socket.on('system', (msg) => {
   el.style.fontStyle = "italic";
   el.textContent = `[SYSTEM] ${msg.text}`;
   messagesEl.appendChild(el);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 });
 
 socket.on('userlist', (list) => {
