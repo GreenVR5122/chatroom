@@ -1,52 +1,50 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>ChatRoom</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="utf-8">
+<title>Super ChatRoom</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body class="light">
-  <div id="container">
-    <h1>ChatRoom</h1>
+<div id="container">
+  <h1>Super ChatRoom</h1>
+  <div id="topButtons">
     <button id="themeToggle">🌙 Toggle Theme</button>
     <button id="modSignup">⭐ Mod Signup</button>
-
-    <div id="updateLog">
-      Update Log:<br>
-      - Added Name Change + Save<br>
-      - Profile Pictures + Send Images<br>
-      - Dark/Light Mode<br>
-      - Notifications
-    </div>
-
-    <!-- Settings -->
-    <div id="settings">
-      <input id="nameInput" placeholder="Enter your name">
-      <input type="file" id="pfpInput" accept="image/*">
-      <button id="saveSettings">Save</button>
-    </div>
-
-    <!-- Chat messages -->
-    <ul id="messages"></ul>
-
-    <!-- Input -->
-    <div id="inputBox">
-      <input id="chatInput" placeholder="Type a message">
-      <input type="file" id="imageInput" accept="image/*">
-      <button id="sendBtn">Send</button>
-    </div>
-
-    <!-- Online users -->
-    <div id="usersBox">
-      <h3>Online Users</h3>
-      <ul id="users"></ul>
-    </div>
-
-    <!-- Notifications -->
-    <div id="notify"></div>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <div id="updateLog">
+    <strong>Update Log:</strong><br>
+    - Owner/Mod/Admin Tags<br>
+    - Custom OWNER Name<br>
+    - PFP + Image messages<br>
+    - Dark/Light mode<br>
+    - Notifications
+  </div>
+
+  <div id="settings">
+    <input id="nameInput" placeholder="Enter your name">
+    <input type="file" id="pfpInput" accept="image/*">
+    <button id="saveSettings">Save</button>
+  </div>
+
+  <ul id="messages"></ul>
+
+  <div id="inputBox">
+    <input id="chatInput" placeholder="Type a message">
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <div id="usersBox">
+    <h3>Online Users</h3>
+    <ul id="users"></ul>
+  </div>
+
+  <div id="notify"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="client.js"></script>
 </body>
 </html>
