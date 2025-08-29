@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Moderation Panel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Moderation Panel</h2>
+  <div id="modUsers"></div>
+  <input id="grantId" placeholder="User ID to grant mod">
+  <button id="grantBtn">Grant Mod</button>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    const modUsers = document.getElementById('modUsers');
+    const grantId = document.getElementById('grantId');
+    const grantBtn = document.getElementById('grantBtn');
+
+    socket.on('userlist', (list) => {
+      modUsers.innerHTML = '';
+      list.forEach(u => {
+        const div = document.createElement('div');
+        div.innerHTML = `${u.id} - [${u.role}] ${u.name} 
+          <button onclick="kick('${u.id}')">Kick</button>`;
+        modUsers.appendChild(div);
+      });
+    });
+
+    grantBtn.onclick = () => {
+      socket.emit('grant-mod', grantId.value);
+    };
+
+    function kick(id) {
+      socket.emit('kick-user', id);
+    }
+  </script>
+</body>
+</html>
