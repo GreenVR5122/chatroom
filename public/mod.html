@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Moderator Chatroom</title>
+<title>Moderator Panel</title>
 <link rel="stylesheet" href="style.css">
 <style>
 body { display:flex; flex-direction:column; height:100vh; background:#111; color:#eee; font-family:sans-serif; }
@@ -68,7 +68,36 @@ document.getElementById("sendBtn").onclick = () => {
   document.getElementById("messageInput").value = "";
 };
 
-socket.on("chat-message", (msg) => {
+socket.on("chat-message", msg => {
   const div = document.createElement("div");
-  div.className = msg.role.toLowerCase() + " msg";
-  div.textContent = `[${msg.role}] ${msg
+  const pfpImg = msg.pfp ? `<img src="${msg.pfp}" style="width:25px;height:25px;border-radius:50%;margin-right:5px;">` : "";
+  div.innerHTML = `${pfpImg}[${msg.role}] <b>${msg.name}</b>: ${msg.text}`;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+});
+
+socket.on("system", msg => {
+  const div = document.createElement("div");
+  div.className = "msg system";
+  div.textContent = `[SYSTEM] ${msg.text}`;
+  messagesDiv.appendChild(div);
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+});
+
+socket.on("userlist", list => {
+  usersDiv.innerHTML = "<h3>Users Online</h3>";
+  list.forEach(user => {
+    const div = document.createElement("div");
+    div.textContent = `[${user.role}] ${user.name} (ID: ${user.id})`;
+    div.style.cursor = "pointer";
+    div.onclick = () => {
+      const action = prompt(`Type KICK or BAN for ${user.name}:`).toUpperCase();
+      if(action === "KICK") socket.emit("kick-user", user.id);
+      if(action === "BAN") socket.emit("ban-user", user.id);
+    };
+    usersDiv.appendChild(div);
+  });
+});
+</script>
+</body>
+</html>
