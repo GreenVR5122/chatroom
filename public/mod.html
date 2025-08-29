@@ -1,59 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Moderation Panel • Super Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Moderator Panel</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-dark">
-  <div class="mod-shell glass">
-    <header class="mod-head">
-      <h1>Moderation Panel</h1>
-      <a href="index.html" class="btn ghost">← Back to Chat</a>
-    </header>
+<body>
+  <h2>Moderator Login</h2>
+  <input id="modId" placeholder="Enter User ID">
+  <input id="modPass" type="password" placeholder="Enter Password">
+  <button id="modLoginBtn">Login</button>
 
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Users</h2>
-        <div class="actions">
-          <input id="sidInput" class="sid-input" placeholder="Target SID…" />
-          <button id="muteBtn" class="btn">Mute</button>
-          <button id="unmuteBtn" class="btn">Unmute</button>
-          <button id="kickBtn" class="btn warn">Kick</button>
-          <button id="banBtn" class="btn danger">Ban</button>
-        </div>
-      </div>
-      <ul id="modUserList" class="user-list"></ul>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Moderator Slot</h2>
-        <div class="actions">
-          <input id="grantSid" class="sid-input" placeholder="Grant MOD to SID…" />
-          <button id="grantBtn" class="btn accent">Grant MOD</button>
-          <button id="revokeBtn" class="btn">Revoke MOD</button>
-        </div>
-      </div>
-      <p class="hint">Only one MOD at a time. OWNER/ADMIN can grant or revoke.</p>
-    </section>
-
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Message Tools</h2>
-        <div class="actions">
-          <input id="messageIdInput" class="sid-input" placeholder="Message ID…" />
-          <button id="deleteBtn" class="btn danger">Delete Message</button>
-        </div>
-      </div>
-      <p class="hint">Grab a message’s ID by hovering it in chat.</p>
-    </section>
+  <div id="modPanel" style="display:none;">
+    <h3>Moderation Tools</h3>
+    <p>Ban/Kick coming soon...</p>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <script>
+    document.getElementById("modLoginBtn").onclick = () => {
+      const id = document.getElementById("modId").value;
+      const pass = document.getElementById("modPass").value;
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="mod.js"></script>
+      // Simple check (this can be improved later with server-side validation)
+      if ((id === "VIoNW" && pass === "GreenTiger#428") || (id === "ABC123" && pass === "ModPass123")) {
+        alert("✅ Access Granted!");
+        document.getElementById("modPanel").style.display = "block";
+      } else {
+        alert("❌ Invalid credentials!");
+      }
+    };
+  </script>
 </body>
 </html>
