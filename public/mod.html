@@ -1,41 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Moderation Panel</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <title>Moderation Panel • Super Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <h2>Moderation Panel</h2>
-  <div id="modUsers"></div>
-  <input id="grantId" placeholder="User ID to grant mod">
-  <button id="grantBtn">Grant Mod</button>
+<body class="theme-dark">
+  <div class="mod-shell glass">
+    <header class="mod-head">
+      <h1>Moderation Panel</h1>
+      <a href="index.html" class="btn ghost">← Back to Chat</a>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Users</h2>
+        <div class="actions">
+          <input id="sidInput" class="sid-input" placeholder="Target SID…" />
+          <button id="muteBtn" class="btn">Mute</button>
+          <button id="unmuteBtn" class="btn">Unmute</button>
+          <button id="kickBtn" class="btn warn">Kick</button>
+          <button id="banBtn" class="btn danger">Ban</button>
+        </div>
+      </div>
+      <ul id="modUserList" class="user-list"></ul>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Moderator Slot</h2>
+        <div class="actions">
+          <input id="grantSid" class="sid-input" placeholder="Grant MOD to SID…" />
+          <button id="grantBtn" class="btn accent">Grant MOD</button>
+          <button id="revokeBtn" class="btn">Revoke MOD</button>
+        </div>
+      </div>
+      <p class="hint">Only one MOD at a time. OWNER/ADMIN can grant or revoke.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Message Tools</h2>
+        <div class="actions">
+          <input id="messageIdInput" class="sid-input" placeholder="Message ID…" />
+          <button id="deleteBtn" class="btn danger">Delete Message</button>
+        </div>
+      </div>
+      <p class="hint">Grab a message’s ID by hovering it in chat.</p>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-
-    const modUsers = document.getElementById('modUsers');
-    const grantId = document.getElementById('grantId');
-    const grantBtn = document.getElementById('grantBtn');
-
-    socket.on('userlist', (list) => {
-      modUsers.innerHTML = '';
-      list.forEach(u => {
-        const div = document.createElement('div');
-        div.innerHTML = `${u.id} - [${u.role}] ${u.name} 
-          <button onclick="kick('${u.id}')">Kick</button>`;
-        modUsers.appendChild(div);
-      });
-    });
-
-    grantBtn.onclick = () => {
-      socket.emit('grant-mod', grantId.value);
-    };
-
-    function kick(id) {
-      socket.emit('kick-user', id);
-    }
-  </script>
+  <script src="mod.js"></script>
 </body>
 </html>
