@@ -10,32 +10,42 @@
     <h1>ChatRoom</h1>
     <button id="themeToggle">🌙 Toggle Theme</button>
     <button id="modSignup">⭐ Mod Signup</button>
-    <div id="updateLog">Update Log:<br>- Added Name Change + Save<br>- Dark/Light Mode<br>- Notifications</div>
 
-    <!-- Name box -->
-    <div id="nameBox">
-      <input type="text" id="nameInput" placeholder="Enter your name">
-      <button id="setNameBtn">Set Name</button>
+    <div id="updateLog">
+      Update Log:<br>
+      - Added Name Change + Save<br>
+      - Profile Pictures + Send Images<br>
+      - Dark/Light Mode<br>
+      - Notifications
+    </div>
+
+    <!-- Settings -->
+    <div id="settings">
+      <input id="nameInput" placeholder="Enter your name">
+      <input type="file" id="pfpInput" accept="image/*">
+      <button id="saveSettings">Save</button>
     </div>
 
     <!-- Chat messages -->
-    <div id="messages"></div>
+    <ul id="messages"></ul>
 
-    <!-- Input box -->
+    <!-- Input -->
     <div id="inputBox">
-      <input type="text" id="msgBox" placeholder="Type a message">
+      <input id="chatInput" placeholder="Type a message">
+      <input type="file" id="imageInput" accept="image/*">
       <button id="sendBtn">Send</button>
     </div>
 
-    <!-- Users list -->
+    <!-- Online users -->
     <div id="usersBox">
       <h3>Online Users</h3>
       <ul id="users"></ul>
     </div>
 
-    <!-- Notification -->
+    <!-- Notifications -->
     <div id="notify"></div>
   </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
 </body>
