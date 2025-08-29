@@ -2,20 +2,22 @@ const socket = io();
 
 const usersEl = document.getElementById('users');
 const messagesEl = document.getElementById('messages');
-const msgBox = document.getElementById('msgBox');
+const chatInput = document.getElementById('chatInput');
 const sendBtn = document.getElementById('sendBtn');
 const notifyEl = document.getElementById('notify');
 
-// Name elements
+// Settings
 const nameInput = document.getElementById('nameInput');
-const setNameBtn = document.getElementById('setNameBtn');
+const pfpInput = document.getElementById('pfpInput');
+const saveSettings = document.getElementById('saveSettings');
 
-// --- Dark/Light Mode Toggle ---
-const themeToggle = document.getElementById('themeToggle');
-themeToggle.addEventListener('click', () => {
+let myPfp = null;
+
+// --- Dark/Light toggle ---
+document.getElementById('themeToggle').onclick = () => {
   document.body.classList.toggle('dark');
   document.body.classList.toggle('light');
-});
+};
 
 // --- Notifications ---
 function notify(text) {
@@ -24,76 +26,102 @@ function notify(text) {
   setTimeout(() => { notifyEl.style.display = "none"; }, 3000);
 }
 
-// --- Save / Load Name History ---
+// --- Save/Load name history ---
 function saveName(name) {
   let history = JSON.parse(localStorage.getItem("nameHistory")) || [];
-  if (!history.includes(name)) {
-    history.push(name);
-  }
+  if (!history.includes(name)) history.push(name);
   localStorage.setItem("nameHistory", JSON.stringify(history));
   localStorage.setItem("lastName", name);
 }
+function loadLastName() { return localStorage.getItem("lastName"); }
 
-function loadLastName() {
-  return localStorage.getItem("lastName");
-}
-
-// --- Function to send message ---
-function sendMessage() {
-  if (msgBox.value.trim() !== "") {
-    socket.emit('chat-message', { text: msgBox.value });
-    msgBox.value = "";
-  }
-}
-
-// --- Send button click ---
-sendBtn.addEventListener('click', sendMessage);
-
-// --- Press Enter key for message ---
-msgBox.addEventListener('keydown', (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    sendMessage();
-  }
-});
-
-// --- Set name ---
-setNameBtn.addEventListener('click', () => {
+// --- Save settings ---
+saveSettings.onclick = () => {
   const newName = nameInput.value.trim();
   if (newName) {
-    socket.emit("set-name", newName);
+    socket.emit('set-name', newName);
     saveName(newName);
     notify(`Name changed to ${newName}`);
   }
-});
 
-// Auto-load last used name
+  const file = pfpInput.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      myPfp = reader.result;
+      socket.emit('set-pfp', myPfp);
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Auto-load last name
 const lastName = loadLastName();
 if (lastName) {
-  socket.emit("set-name", lastName);
+  socket.emit('set-name', lastName);
   nameInput.value = lastName;
 }
 
+// --- Send message ---
+function sendMessage(text=null,img=null) {
+  socket.emit('chat-message',{ text: text||chatInput.value, img: img, pfp: myPfp });
+  chatInput.value = '';
+}
+sendBtn.onclick = () => sendMessage();
+chatInput.addEventListener('keydown',e=>{ if(e.key==='Enter'){ sendMessage(); } });
+
+// --- Send image message ---
+document.getElementById('imageInput').onchange = e => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = () => sendMessage('', reader.result);
+    reader.readAsDataURL(file);
+  }
+};
+
 // --- Receiving messages ---
-socket.on('chat-message', (msg) => {
-  const el = document.createElement('div');
-  el.textContent = `${msg.name}: ${msg.text}`;
-  messagesEl.appendChild(el);
+socket.on('chat-message', msg => {
+  const li = document.createElement('li');
+
+  // pfp
+  if (msg.pfp){
+    const img = document.createElement('img');
+    img.src = msg.pfp;
+    img.classList.add('pfp');
+    li.appendChild(img);
+  }
+
+  // name + text
+  li.innerHTML += `<strong>${msg.name}:</strong> ${msg.text}`;
+
+  // image
+  if (msg.img){
+    const img = document.createElement('img');
+    img.src = msg.img;
+    img.classList.add('chat-image');
+    li.appendChild(img);
+  }
+
+  messagesEl.appendChild(li);
   messagesEl.scrollTop = messagesEl.scrollHeight;
+
   notify(`New message from ${msg.name}`);
 });
 
-socket.on('system', (msg) => {
-  const el = document.createElement('div');
-  el.style.fontStyle = "italic";
-  el.textContent = `[SYSTEM] ${msg.text}`;
-  messagesEl.appendChild(el);
+// --- System messages ---
+socket.on('system', msg => {
+  const li = document.createElement('li');
+  li.style.fontStyle = "italic";
+  li.textContent = `[SYSTEM] ${msg.text}`;
+  messagesEl.appendChild(li);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 });
 
-socket.on('userlist', (list) => {
+// --- User list ---
+socket.on('userlist', list => {
   usersEl.innerHTML = "";
-  list.forEach(u => {
+  list.forEach(u=>{
     const li = document.createElement('li');
     li.textContent = u;
     usersEl.appendChild(li);
@@ -101,6 +129,6 @@ socket.on('userlist', (list) => {
 });
 
 // --- Mod Signup ---
-document.getElementById('modSignup').addEventListener('click', () => {
+document.getElementById('modSignup').onclick = () => {
   notify("You signed up as a moderator (placeholder).");
-});
+};
