@@ -1,68 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Super Chatroom</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Chatroom</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="theme-dark">
-  <div class="app-shell">
-    <aside class="sidebar glass">
-      <div class="brand">
-        <div class="logo">💬</div>
-        <div class="brand-text">
-          <h1>Super Chat</h1>
-          <p class="sub">real-time • roles • vibes</p>
-        </div>
-      </div>
-
-      <div class="me-card">
-        <div class="pfp-wrap">
-          <img id="mePfpPreview" class="pfp" alt="pfp" />
-        </div>
-        <div class="me-fields">
-          <input id="nameInput" placeholder="Your name…" />
-          <label class="file">
-            <input id="pfpInput" type="file" accept="image/*" />
-            <span>Upload PFP</span>
-          </label>
-          <button id="saveBtn" class="btn primary">Save</button>
-        </div>
-        <div class="me-role">
-          <span id="meBadge" class="badge">USER</span>
-          <span id="meId" class="uid">ID: -----</span>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Online Users</h2>
-          <button id="themeToggle" class="btn ghost">🌓</button>
-        </div>
-        <ul id="userList" class="user-list"></ul>
-      </div>
-
-      <button id="openMod" class="btn accent" style="display:none;">Open Moderation Panel</button>
-    </aside>
-
-    <main class="main glass">
-      <div id="messages" class="messages"></div>
-
-      <div class="composer">
-        <label class="file">
-          <input id="imageInput" type="file" accept="image/*" />
-          <span>📷 Image</span>
-        </label>
-        <input id="msgInput" class="msg-input" placeholder="Type a message…" />
-        <button id="sendBtn" class="btn primary">Send</button>
-      </div>
-    </main>
+<body>
+  <div id="login">
+    <h2>Login to Chat</h2>
+    <input id="nameInput" placeholder="Enter Name">
+    <input id="idInput" placeholder="Enter User ID (optional)">
+    <input id="passInput" type="password" placeholder="Enter Password (if required)">
+    <button id="joinBtn">Join Chat</button>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div id="chat" style="display:none;">
+    <div id="messages"></div>
+    <input id="messageInput" placeholder="Type message...">
+    <button id="sendBtn">Send</button>
+  </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <script>
+    const socket = io();
+    const loginDiv = document.getElementById('login');
+    const chatDiv = document.getElementById('chat');
+
+    document.getElementById("joinBtn").onclick = () => {
+      const name = document.getElementById("nameInput").value;
+      const userId = document.getElementById("idInput").value;
+      const password = document.getElementById("passInput").value;
+
+      socket.emit("set-name", { name, userId, password });
+
+      loginDiv.style.display = "none";
+      chatDiv.style.display = "block";
+    };
+
+    document.getElementById("sendBtn").onclick = () => {
+      const msg = document.getElementById("messageInput").value;
+      socket.emit("chat-message", { text: msg });
+      document.getElementById("messageInput").value = "";
+    };
+
+    socket.on("chat-message", (msg) => {
+      const div = document.createElement("div");
+      div.textContent = `[${msg.role}] ${msg.name}: ${msg.text}`;
+      document.getElementById("messages").appendChild(div);
+    });
+
+    socket.on("system", (msg) => {
+      const div = document.createElement("div");
+      div.textContent = `[SYSTEM] ${msg.text}`;
+      document.getElementById("messages").appendChild(div);
+    });
+  </script>
 </body>
 </html>
