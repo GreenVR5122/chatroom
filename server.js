@@ -1,95 +1,104 @@
 // server.js
-const express = require("express");
+const express = require('express');
 const app = express();
-const http = require("http").createServer(app);
-const io = require("socket.io")(http);
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 
 const PORT = process.env.PORT || 3000;
 
-// Serve frontend files
-app.use(express.static("public"));
+app.use(express.static('public'));
 
-// keep a map of socket.id -> name
-const users = new Map();
-const mods = new Set(); // keep track of moderators
+// store users and roles
+const users = new Map(); // socket.id -> { name, role, pfp }
+let grantedMod = null; // store one mod
 
 function buildUserList() {
-  return Array.from(users.entries()).map(([id, name]) => ({
+  return Array.from(users).map(([id, u]) => ({
     id,
-    name,
-    role: mods.has(id) ? "MOD" : "USER",
+    name: u.name,
+    role: u.role,
+    pfp: u.pfp
   }));
 }
 
-io.on("connection", (socket) => {
-  // default name
-  users.set(socket.id, "Guest_" + socket.id.slice(0, 5));
-  io.emit("userlist", buildUserList());
+io.on('connection', (socket) => {
+  // default user
+  let username = 'Guest_' + socket.id.slice(0,5);
+  let role = 'USER';
+  let pfp = null;
 
-  io.emit("system", {
-    text: `${users.get(socket.id)} joined the chat.`,
-    time: Date.now(),
+  // owner check
+  if (username === "Guest_" + socket.id.slice(0,5) && socket.handshake.query.owner === "true") {
+    username = "GreenVR";
+    role = "OWNER";
+  }
+
+  users.set(socket.id, { name: username, role, pfp });
+  io.emit('userlist', buildUserList());
+
+  io.emit('system', { text: `${username} joined the chat.`, time: Date.now() });
+
+  // change name
+  socket.on('set-name', (newName) => {
+    if (typeof newName !== 'string') return;
+    const safe = newName.trim().slice(0, 40);
+    users.get(socket.id).name = safe;
+    io.emit('userlist', buildUserList());
   });
 
-  // handle name change
-  socket.on("set-name", (newName) => {
-    if (typeof newName !== "string") return;
-    const safe =
-      newName.trim().slice(0, 40) || "Guest_" + socket.id.slice(0, 5);
-    users.set(socket.id, safe);
-    io.emit("userlist", buildUserList());
-    io.emit("system", {
-      text: `${safe} changed their name.`,
-      time: Date.now(),
-    });
+  // set profile picture
+  socket.on('set-pfp', (imgData) => {
+    if (typeof imgData !== 'string') return;
+    users.get(socket.id).pfp = imgData; // base64
+    io.emit('userlist', buildUserList());
   });
 
-  // moderation grant
-  socket.on("grant-mod", (userId) => {
-    if (!users.has(userId)) return;
-    mods.add(userId);
-    io.to(userId).emit("mod-granted");
-    io.emit("system", {
-      text: `${users.get(userId)} is now a moderator.`,
-      time: Date.now(),
-    });
-    io.emit("userlist", buildUserList());
-  });
+  // grant mod (owner only)
+  socket.on('grant-mod', (userId) => {
+    const user = users.get(socket.id);
+    if (!user || user.role !== "OWNER") return;
 
-  // ban user
-  socket.on("ban-user", (userId) => {
-    if (!mods.has(socket.id)) return; // only mods can ban
     if (users.has(userId)) {
-      const name = users.get(userId);
-      io.to(userId).emit("banned");
-      io.sockets.sockets.get(userId)?.disconnect(true);
-      users.delete(userId);
-      io.emit("system", { text: `${name} was banned.`, time: Date.now() });
-      io.emit("userlist", buildUserList());
+      grantedMod = userId;
+      users.get(userId).role = "MOD";
+      io.emit('system', { text: `${users.get(userId).name} is now a MOD.`, time: Date.now() });
+      io.emit('userlist', buildUserList());
     }
   });
 
-  // messages
-  socket.on("chat-message", (msg) => {
-    const payload = {
-      id: socket.id,
-      name: users.get(socket.id) || "Guest",
-      text:
-        typeof msg.text === "string" ? msg.text.slice(0, 2000) : "",
-      time: Date.now(),
-    };
-    io.emit("chat-message", payload);
+  // moderation actions
+  socket.on('kick-user', (id) => {
+    const user = users.get(socket.id);
+    if (!user || (user.role !== "OWNER" && socket.id !== grantedMod)) return;
+
+    if (users.has(id)) {
+      io.to(id).emit('kicked');
+      io.sockets.sockets.get(id)?.disconnect(true);
+    }
   });
 
-  socket.on("disconnect", () => {
-    const name = users.get(socket.id) || "Guest";
+  // chat message
+  socket.on('chat-message', (msg) => {
+    const user = users.get(socket.id);
+    if (!user) return;
+
+    const payload = {
+      id: socket.id,
+      name: user.name,
+      role: user.role,
+      text: msg.text?.slice(0,2000) || '',
+      pfp: user.pfp,
+      time: Date.now()
+    };
+    io.emit('chat-message', payload);
+  });
+
+  socket.on('disconnect', () => {
+    const user = users.get(socket.id);
+    if (!user) return;
     users.delete(socket.id);
-    mods.delete(socket.id);
-    io.emit("userlist", buildUserList());
-    io.emit("system", {
-      text: `${name} left the chat.`,
-      time: Date.now(),
-    });
+    io.emit('userlist', buildUserList());
+    io.emit('system', { text: `${user.name} left the chat.`, time: Date.now() });
   });
 });
 
