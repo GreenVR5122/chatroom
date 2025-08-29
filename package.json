@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 {
   "name": "simple-multi-chat",
   "version": "1.0.0",
@@ -12,7 +11,7 @@
     "socket.io": "^4.8.1"
   }
 }
-=======
+
 {
   "name": "simple-multi-chat",
   "version": "1.0.0",
@@ -26,4 +25,3 @@
     "socket.io": "^4.8.1"
   }
 }
->>>>>>> c086fd15bb0e64c1eeacf890e0ac603f556ac6c9
