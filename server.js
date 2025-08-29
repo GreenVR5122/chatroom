@@ -6,68 +6,68 @@ const io = require('socket.io')(http);
 
 const PORT = process.env.PORT || 3000;
 
+// Serve public folder
 app.use(express.static('public'));
 
 // --- BAD WORD FILTER ---
 const badWords = ["fuck","shit","bitch","asshole","cunt","dick","pussy","nigger","nigga","faggot","retard","whore","slut","cock","bastard","damn"];
 function censor(text) {
-  let words = text.split(/\s+/);
-  return words.map(w => {
+  if (!text) return '';
+  return text.split(/\s+/).map(w => {
     const lw = w.toLowerCase();
-    if (badWords.includes(lw)) {
-      return w[0] + "*".repeat(w.length - 1);
-    }
+    if (badWords.includes(lw)) return w[0] + "*".repeat(w.length - 1);
     return w;
   }).join(" ");
 }
 
-// keep a map of socket.id -> name
+// Keep users map: socket.id -> {name, pfp}
 const users = new Map();
 
 function buildUserList() {
-  return Array.from(users.values());
+  return Array.from(users.values()).map(u => u.name);
 }
 
 io.on('connection', (socket) => {
-  // default name
-  users.set(socket.id, 'Guest_' + socket.id.slice(0,5));
+  // default name + pfp
+  users.set(socket.id, { name: 'Guest_' + socket.id.slice(0,5), pfp: null });
   io.emit('userlist', buildUserList());
 
-  // announce join
-  io.emit('system', {
-    text: `${users.get(socket.id)} joined the chat.`,
-    time: Date.now()
+  io.emit('system', { text: `${users.get(socket.id).name} joined the chat.`, time: Date.now() });
+
+  // set name
+  socket.on('set-name', (newName) => {
+    const safe = censor(newName.trim().slice(0,40)) || ('Guest_' + socket.id.slice(0,5));
+    users.get(socket.id).name = safe;
+    io.emit('userlist', buildUserList());
+    io.emit('system', { text: `${safe} changed their name.`, time: Date.now() });
   });
 
-  socket.on('set-name', (newName) => {
-    if (typeof newName !== 'string') return;
-    const safe = censor(newName.trim().slice(0, 40)) || ('Guest_' + socket.id.slice(0,5));
-    users.set(socket.id, safe);
-    io.emit('userlist', buildUserList());
-    io.emit('system', {
-      text: `${safe} changed their name.`,
+  // set PFP
+  socket.on('set-pfp', (pfp) => {
+    if (typeof pfp === 'string' && pfp.startsWith('data:image')) {
+      users.get(socket.id).pfp = pfp;
+    }
+  });
+
+  // chat messages
+  socket.on('chat-message', (msg) => {
+    const user = users.get(socket.id);
+    io.emit('chat-message', {
+      id: socket.id,
+      name: user.name,
+      text: censor(msg.text),
+      img: msg.img || null,
+      pfp: user.pfp || null,
       time: Date.now()
     });
   });
 
-  socket.on('chat-message', (msg) => {
-    const payload = {
-      id: socket.id,
-      name: users.get(socket.id) || 'Guest',
-      text: typeof msg.text === 'string' ? censor(msg.text.slice(0,2000)) : '',
-      time: Date.now()
-    };
-    io.emit('chat-message', payload);
-  });
-
+  // disconnect
   socket.on('disconnect', () => {
-    const name = users.get(socket.id) || 'Guest';
+    const name = users.get(socket.id)?.name || 'Guest';
     users.delete(socket.id);
     io.emit('userlist', buildUserList());
-    io.emit('system', {
-      text: `${name} left the chat.`,
-      time: Date.now()
-    });
+    io.emit('system', { text: `${name} left the chat.`, time: Date.now() });
   });
 });
 
