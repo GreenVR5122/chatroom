@@ -1,40 +1,41 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Chatroom</title>
-  <style>
-    body { font-family: Arial; margin: 0; display: flex; }
-    #chat { flex: 3; padding: 10px; border-right: 1px solid #ccc; }
-    #sidebar { flex: 1; padding: 10px; background: #f9f9f9; }
-    #messages { height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; }
-    #update-log { margin-top: 20px; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div id="chat">
-    <h2>Chatroom</h2>
-    <div id="messages"></div>
-    <input id="msg" placeholder="Type message">
-    <button onclick="sendMessage()">Send</button>
+<body class="light">
+  <div id="topbar">
+    <h1>Chatroom</h1>
+    <button id="themeToggle">🌙 Dark/Light</button>
   </div>
 
-  <div id="sidebar">
-    <h3>Users</h3>
-    <ul id="users"></ul>
+  <div id="main">
+    <div id="sidebar">
+      <h3>Users</h3>
+      <ul id="users"></ul>
 
-    <h3>Change Name</h3>
-    <input id="newName" placeholder="Enter name">
-    <button onclick="setName()">Set Name</button>
+      <h3>Moderation</h3>
+      <button id="modSignup">Sign up as Mod</button>
 
-    <h3>Apply for Moderator</h3>
-    <input id="modName" placeholder="Your name">
-    <button onclick="requestMod()">Apply</button>
-
-    <div id="update-log">
       <h3>Update Log</h3>
-      <ul id="updates"></ul>
+      <ul id="updates">
+        <li>✅ Added cuss/slur filter</li>
+        <li>✅ Added notifications</li>
+        <li>✅ Added dark/light mode</li>
+        <li>✅ Added mod signups</li>
+      </ul>
+    </div>
+
+    <div id="chat">
+      <div id="messages"></div>
+      <input id="msgBox" placeholder="Type message...">
+      <button id="sendBtn">Send</button>
     </div>
   </div>
+
+  <div id="notify"></div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="client.js"></script>
