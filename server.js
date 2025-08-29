@@ -8,35 +8,32 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static("public"));
 
-// PRE-ASSIGNED ROLES (IDs must be exact)
+// Pre-assigned roles with optional passwords
 const secureRoles = {
-  "VIoNW": { role: "OWNER", password: "GreenTiger#428" }, // YOU
-  "ABC123": { role: "MOD", password: "ModPass123" }       // Example MOD
+  "VIoNW": { role: "OWNER", password: "GreenTiger#428" },
+  "ABC123": { role: "MOD", password: "ModPass123" }
 };
 
 const users = new Map();
+const bannedUsers = new Set();
 
 function buildUserList() {
   return Array.from(users.values());
 }
 
 io.on("connection", (socket) => {
-  // Wait until user sets their name/ID
-  users.set(socket.id, {
-    id: socket.id,
-    name: "Unknown",
-    role: "User",
-    pfp: null
-  });
+  users.set(socket.id, { id: socket.id, name: "Unknown", role: "User", pfp: null });
 
   socket.on("set-name", ({ name, userId, password }) => {
-    let role = "User";
+    if (bannedUsers.has(userId)) {
+      socket.emit("system", { text: "You are banned.", time: Date.now() });
+      return socket.disconnect(true);
+    }
 
+    let role = "User";
     if (userId && secureRoles[userId]) {
       const { role: targetRole, password: requiredPassword } = secureRoles[userId];
-      if (!requiredPassword || password === requiredPassword) {
-        role = targetRole;
-      }
+      if (!requiredPassword || password === requiredPassword) role = targetRole;
     }
 
     users.set(socket.id, {
@@ -47,10 +44,7 @@ io.on("connection", (socket) => {
     });
 
     io.emit("userlist", buildUserList());
-    io.emit("system", {
-      text: `[${role}] ${users.get(socket.id).name} joined.`,
-      time: Date.now()
-    });
+    io.emit("system", { text: `[${role}] ${users.get(socket.id).name} joined.`, time: Date.now() });
   });
 
   socket.on("set-pfp", (imgData) => {
@@ -77,17 +71,32 @@ io.on("connection", (socket) => {
     io.emit("chat-message", payload);
   });
 
+  socket.on("kick-user", (targetId) => {
+    const actor = users.get(socket.id);
+    if (!actor || (actor.role !== "OWNER" && actor.role !== "MOD")) return;
+
+    const target = [...users.values()].find(u => u.id === targetId);
+    if (target) {
+      const targetSocket = [...io.sockets.sockets.values()].find(s => users.get(s.id)?.id === targetId);
+      if (targetSocket) targetSocket.disconnect(true);
+    }
+  });
+
+  socket.on("ban-user", (targetId) => {
+    const actor = users.get(socket.id);
+    if (!actor || (actor.role !== "OWNER" && actor.role !== "MOD")) return;
+
+    bannedUsers.add(targetId);
+    const targetSocket = [...io.sockets.sockets.values()].find(s => users.get(s.id)?.id === targetId);
+    if (targetSocket) targetSocket.disconnect(true);
+  });
+
   socket.on("disconnect", () => {
     const name = users.get(socket.id)?.name || "Unknown";
     users.delete(socket.id);
     io.emit("userlist", buildUserList());
-    io.emit("system", {
-      text: `${name} left.`,
-      time: Date.now()
-    });
+    io.emit("system", { text: `${name} left.`, time: Date.now() });
   });
 });
 
-http.listen(PORT, () => {
-  console.log(`✅ Chat server running on http://localhost:${PORT}`);
-});
+http.listen(PORT, () => console.log(`✅ Chat server running on http://localhost:${PORT}`));
