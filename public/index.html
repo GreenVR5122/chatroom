@@ -1,96 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Chatroom</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <title>Super Chatroom</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <div id="chat-container">
-    <div id="sidebar">
-      <h2>Users</h2>
-      <ul id="userlist"></ul>
-      <button id="modPanel" style="display:none;">Open Mod Panel</button>
-    </div>
-    <div id="main">
-      <div id="messages"></div>
-      <input id="nameInput" placeholder="Change name...">
-      <input type="file" id="pfpInput" accept="image/*">
-      <input id="msgInput" placeholder="Type message...">
-      <button id="sendBtn">Send</button>
-    </div>
+<body class="theme-dark">
+  <div class="app-shell">
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="logo">💬</div>
+        <div class="brand-text">
+          <h1>Super Chat</h1>
+          <p class="sub">real-time • roles • vibes</p>
+        </div>
+      </div>
+
+      <div class="me-card">
+        <div class="pfp-wrap">
+          <img id="mePfpPreview" class="pfp" alt="pfp" />
+        </div>
+        <div class="me-fields">
+          <input id="nameInput" placeholder="Your name…" />
+          <label class="file">
+            <input id="pfpInput" type="file" accept="image/*" />
+            <span>Upload PFP</span>
+          </label>
+          <button id="saveBtn" class="btn primary">Save</button>
+        </div>
+        <div class="me-role">
+          <span id="meBadge" class="badge">USER</span>
+          <span id="meId" class="uid">ID: -----</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Online Users</h2>
+          <button id="themeToggle" class="btn ghost">🌓</button>
+        </div>
+        <ul id="userList" class="user-list"></ul>
+      </div>
+
+      <button id="openMod" class="btn accent" style="display:none;">Open Moderation Panel</button>
+    </aside>
+
+    <main class="main glass">
+      <div id="messages" class="messages"></div>
+
+      <div class="composer">
+        <label class="file">
+          <input id="imageInput" type="file" accept="image/*" />
+          <span>📷 Image</span>
+        </label>
+        <input id="msgInput" class="msg-input" placeholder="Type a message…" />
+        <button id="sendBtn" class="btn primary">Send</button>
+      </div>
+    </main>
   </div>
 
+  <div id="toast" class="toast"></div>
+
   <script src="/socket.io/socket.io.js"></script>
-  <script>
-    const socket = io();
-
-    const messages = document.getElementById('messages');
-    const userlist = document.getElementById('userlist');
-    const sendBtn = document.getElementById('sendBtn');
-    const msgInput = document.getElementById('msgInput');
-    const nameInput = document.getElementById('nameInput');
-    const pfpInput = document.getElementById('pfpInput');
-    const modPanel = document.getElementById('modPanel');
-
-    sendBtn.onclick = () => {
-      socket.emit('chat-message', { text: msgInput.value });
-      msgInput.value = '';
-    };
-
-    nameInput.onchange = () => {
-      socket.emit('set-name', nameInput.value);
-    };
-
-    pfpInput.onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        socket.emit('set-pfp', reader.result);
-      };
-      reader.readAsDataURL(file);
-    };
-
-    socket.on('chat-message', (msg) => {
-      const div = document.createElement('div');
-      let roleTag = msg.role && msg.role !== "USER" ? `[${msg.role}] ` : "";
-      div.innerHTML = `
-        <div class="msg">
-          ${msg.pfp ? `<img class="pfp" src="${msg.pfp}">` : ''}
-          <b>${roleTag}${msg.name}</b>: ${msg.text}
-        </div>`;
-      messages.appendChild(div);
-      messages.scrollTop = messages.scrollHeight;
-    });
-
-    socket.on('system', (data) => {
-      const div = document.createElement('div');
-      div.className = 'system';
-      div.textContent = data.text;
-      messages.appendChild(div);
-    });
-
-    socket.on('userlist', (list) => {
-      userlist.innerHTML = '';
-      list.forEach(u => {
-        const li = document.createElement('li');
-        li.textContent = `[${u.role}] ${u.name}`;
-        userlist.appendChild(li);
-        if (u.role === "OWNER" || u.role === "MOD") {
-          modPanel.style.display = "block";
-        }
-      });
-    });
-
-    modPanel.onclick = () => {
-      window.location.href = "mod.html";
-    };
-
-    socket.on('kicked', () => {
-      alert("You have been kicked by a moderator.");
-      window.location.reload();
-    });
-  </script>
+  <script src="client.js"></script>
 </body>
 </html>
