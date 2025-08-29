@@ -1,103 +1,73 @@
-// server.js
-const express = require("express");
-const app = express();
-const http = require("http").createServer(app);
-const io = require("socket.io")(http);
-const path = require("path");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Chatroom</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="login">
+  <h2>Login to Chat</h2>
+  <input id="nameInput" placeholder="Enter Name">
+  <input id="idInput" placeholder="Enter User ID (optional)">
+  <input id="passInput" type="password" placeholder="Enter Password (if required)">
+  <button id="joinBtn">Join Chat</button>
+</div>
 
-const PORT = process.env.PORT || 3000;
+<div id="chat" style="display:none;">
+  <div id="messages"></div>
+  <input id="messageInput" placeholder="Type message...">
+  <input type="file" id="pfpInput">
+  <button id="sendBtn">Send</button>
+</div>
 
-app.use(express.static("public"));
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const loginDiv = document.getElementById('login');
+const chatDiv = document.getElementById('chat');
 
-// Pre-assigned roles
-const secureRoles = {
-  "VIoNW": { role: "OWNER", password: "GreenTiger#428" },
-  "ABC123": { role: "MOD", password: "ModPass123" }
+document.getElementById("joinBtn").onclick = () => {
+  const name = document.getElementById("nameInput").value;
+  const userId = document.getElementById("idInput").value;
+  const password = document.getElementById("passInput").value;
+  socket.emit("set-name", { name, userId, password });
+  loginDiv.style.display = "none";
+  chatDiv.style.display = "block";
 };
 
-const users = new Map();
-const bannedUsers = new Set();
+// Set profile picture
+document.getElementById("pfpInput").onchange = e => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+  reader.onload = () => socket.emit("set-pfp", reader.result);
+  reader.readAsDataURL(file);
+};
 
-function buildUserList() {
-  return Array.from(users.values());
-}
+// Send message
+document.getElementById("sendBtn").onclick = () => {
+  const msg = document.getElementById("messageInput").value;
+  socket.emit("chat-message", { text: msg });
+  document.getElementById("messageInput").value = "";
+};
 
-io.on("connection", (socket) => {
-  users.set(socket.id, { id: socket.id, name: "Unknown", role: "User", pfp: null });
-
-  socket.on("set-name", ({ name, userId, password }) => {
-    if (bannedUsers.has(userId)) {
-      socket.emit("system", { text: "You are banned.", time: Date.now() });
-      return socket.disconnect(true);
-    }
-
-    let role = "User";
-    if (userId && secureRoles[userId]) {
-      const { role: targetRole, password: requiredPassword } = secureRoles[userId];
-      if (!requiredPassword || password === requiredPassword) role = targetRole;
-    }
-
-    users.set(socket.id, {
-      id: userId || socket.id,
-      name: String(name).trim().slice(0, 30) || "Unknown",
-      role,
-      pfp: null
-    });
-
-    io.emit("userlist", buildUserList());
-    io.emit("system", { text: `[${role}] ${users.get(socket.id).name} joined.`, time: Date.now() });
-  });
-
-  socket.on("set-pfp", (imgData) => {
-    const user = users.get(socket.id);
-    if (user) {
-      user.pfp = imgData;
-      io.emit("userlist", buildUserList());
-    }
-  });
-
-  socket.on("chat-message", (msg) => {
-    const user = users.get(socket.id);
-    if (!user) return;
-
-    const payload = {
-      id: user.id,
-      name: user.name,
-      role: user.role,
-      text: typeof msg.text === "string" ? msg.text.slice(0, 2000) : "",
-      img: typeof msg.img === "string" ? msg.img : null,
-      pfp: user.pfp,
-      time: Date.now()
-    };
-    io.emit("chat-message", payload);
-  });
-
-  socket.on("kick-user", (targetId) => {
-    const actor = users.get(socket.id);
-    if (!actor || (actor.role !== "OWNER" && actor.role !== "MOD")) return;
-
-    const target = [...users.values()].find(u => u.id === targetId);
-    if (target) {
-      const targetSocket = [...io.sockets.sockets.values()].find(s => users.get(s.id)?.id === targetId);
-      if (targetSocket) targetSocket.disconnect(true);
-    }
-  });
-
-  socket.on("ban-user", (targetId) => {
-    const actor = users.get(socket.id);
-    if (!actor || (actor.role !== "OWNER" && actor.role !== "MOD")) return;
-
-    bannedUsers.add(targetId);
-    const targetSocket = [...io.sockets.sockets.values()].find(s => users.get(s.id)?.id === targetId);
-    if (targetSocket) targetSocket.disconnect(true);
-  });
-
-  socket.on("disconnect", () => {
-    const name = users.get(socket.id)?.name || "Unknown";
-    users.delete(socket.id);
-    io.emit("userlist", buildUserList());
-    io.emit("system", { text: `${name} left.`, time: Date.now() });
-  });
+// Display messages
+const messages = document.getElementById("messages");
+socket.on("chat-message", msg => {
+  const div = document.createElement("div");
+  const pfpImg = msg.pfp ? `<img src="${msg.pfp}" style="width:25px;height:25px;border-radius:50%;margin-right:5px;">` : "";
+  div.innerHTML = `${pfpImg}[${msg.role}] <b>${msg.name}</b>: ${msg.text}`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
 });
 
-http.listen(PORT, () => console.log(`✅ Chat server running on http://localhost:${PORT}`));
+socket.on("system", msg => {
+  const div = document.createElement("div");
+  div.className = "system";
+  div.textContent = `[SYSTEM] ${msg.text}`;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+});
+</script>
+</body>
+</html>
