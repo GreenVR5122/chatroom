@@ -1,43 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8">
   <title>Chatroom</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="chat">
-    <h2>Chatroom</h2>
-
-    <div id="messages-container">
-      <ul id="messages"></ul>
+  <div id="chat-container">
+    <div id="sidebar">
+      <h2>Users</h2>
+      <ul id="userlist"></ul>
+      <button id="modPanel" style="display:none;">Open Mod Panel</button>
     </div>
-
-    <div id="input-container">
-      <input id="chatInput" placeholder="Type message..." />
+    <div id="main">
+      <div id="messages"></div>
+      <input id="nameInput" placeholder="Change name...">
+      <input type="file" id="pfpInput" accept="image/*">
+      <input id="msgInput" placeholder="Type message...">
       <button id="sendBtn">Send</button>
-    </div>
-
-    <div id="name-container">
-      <input id="nameInput" placeholder="Change name..." />
-      <button id="setNameBtn">Set Name</button>
-    </div>
-
-    <h3>Users</h3>
-    <ul id="users"></ul>
-
-    <!-- Moderation -->
-    <button id="modPanelBtn" style="display:none;">Open Mod Panel</button>
-    <div id="modPanel" style="display:none;">
-      <h3>Moderation Panel</h3>
-      <input id="grantInput" placeholder="User ID to grant mod" />
-      <button id="grantBtn">Grant Mod</button>
-      <input id="banInput" placeholder="User ID to ban" />
-      <button id="banBtn">Ban User</button>
     </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <script>
+    const socket = io();
+
+    const messages = document.getElementById('messages');
+    const userlist = document.getElementById('userlist');
+    const sendBtn = document.getElementById('sendBtn');
+    const msgInput = document.getElementById('msgInput');
+    const nameInput = document.getElementById('nameInput');
+    const pfpInput = document.getElementById('pfpInput');
+    const modPanel = document.getElementById('modPanel');
+
+    sendBtn.onclick = () => {
+      socket.emit('chat-message', { text: msgInput.value });
+      msgInput.value = '';
+    };
+
+    nameInput.onchange = () => {
+      socket.emit('set-name', nameInput.value);
+    };
+
+    pfpInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        socket.emit('set-pfp', reader.result);
+      };
+      reader.readAsDataURL(file);
+    };
+
+    socket.on('chat-message', (msg) => {
+      const div = document.createElement('div');
+      let roleTag = msg.role && msg.role !== "USER" ? `[${msg.role}] ` : "";
+      div.innerHTML = `
+        <div class="msg">
+          ${msg.pfp ? `<img class="pfp" src="${msg.pfp}">` : ''}
+          <b>${roleTag}${msg.name}</b>: ${msg.text}
+        </div>`;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    });
+
+    socket.on('system', (data) => {
+      const div = document.createElement('div');
+      div.className = 'system';
+      div.textContent = data.text;
+      messages.appendChild(div);
+    });
+
+    socket.on('userlist', (list) => {
+      userlist.innerHTML = '';
+      list.forEach(u => {
+        const li = document.createElement('li');
+        li.textContent = `[${u.role}] ${u.name}`;
+        userlist.appendChild(li);
+        if (u.role === "OWNER" || u.role === "MOD") {
+          modPanel.style.display = "block";
+        }
+      });
+    });
+
+    modPanel.onclick = () => {
+      window.location.href = "mod.html";
+    };
+
+    socket.on('kicked', () => {
+      alert("You have been kicked by a moderator.");
+      window.location.reload();
+    });
+  </script>
 </body>
 </html>
