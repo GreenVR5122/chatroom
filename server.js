@@ -8,18 +8,20 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static('public'));
 
-// keep a map of socket.id -> name
 const users = new Map();
-const modRequests = [];
 
-function buildUserList() {
-  return Array.from(users.values());
-}
-
-// --- Slur Censor ---
+// --- Slur + Cuss Censor ---
 function censor(text) {
   if (!text) return text;
-  const banned = ["Bitch", "Cock", "Shit"]; // add real slurs/bad words
+
+  const banned = [
+    "fuck","shit","bitch","asshole","bastard","cunt","dick","pussy","slut","whore",
+    "nigger","faggot","retard","chink","spic","kike","tranny","dyke","cock","penis",
+    "vagina","cum","jizz","blowjob","handjob","dildo","anal","rape","molest","sex",
+    "motherfucker","goddamn","bollocks","bugger","twat","wanker","prick","arse",
+    "jerkoff","tits","boobs","boob","fap","nut","nutting","orgasm","boner","hentai"
+  ];
+
   let clean = text;
   banned.forEach(word => {
     const regex = new RegExp(word, "gi");
@@ -30,18 +32,19 @@ function censor(text) {
   return clean;
 }
 
+function buildUserList() {
+  return Array.from(users.values());
+}
+
 io.on('connection', (socket) => {
-  // default name
   users.set(socket.id, 'Guest_' + socket.id.slice(0,5));
   io.emit('userlist', buildUserList());
 
-  // announce join
   io.emit('system', {
     text: `${users.get(socket.id)} joined the chat.`,
     time: Date.now()
   });
 
-  // name change
   socket.on('set-name', (newName) => {
     if (typeof newName !== 'string') return;
     const safe = newName.trim().slice(0, 40) || ('Guest_' + socket.id.slice(0,5));
@@ -53,7 +56,6 @@ io.on('connection', (socket) => {
     });
   });
 
-  // chat messages
   socket.on('chat-message', (msg) => {
     const payload = {
       id: socket.id,
@@ -65,13 +67,6 @@ io.on('connection', (socket) => {
     io.emit('chat-message', payload);
   });
 
-  // moderation signup
-  socket.on("mod-signup", (name) => {
-    modRequests.push({ id: socket.id, name, time: Date.now() });
-    io.emit("system", { text: `${name} applied for Moderator!`, time: Date.now() });
-  });
-
-  // disconnect
   socket.on('disconnect', () => {
     const name = users.get(socket.id) || 'Guest';
     users.delete(socket.id);
